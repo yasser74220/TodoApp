@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:todoapp/modules/archive_tasks_screen.dart';
 import 'package:todoapp/modules/done_tasks_screen.dart';
 import 'package:todoapp/modules/new_tasks_screen.dart';
+import 'package:todoapp/shared/components/components.dart';
 
 class HomeLayout extends StatefulWidget {
   const HomeLayout({Key? key}) : super(key: key);
@@ -14,6 +16,11 @@ class HomeLayout extends StatefulWidget {
 class _HomeLayoutState extends State<HomeLayout> {
   late Database database;
   var scaffoldKey = GlobalKey<ScaffoldState>();
+  var validate = GlobalKey<FormState>();
+  TextEditingController titleController = TextEditingController();
+  TextEditingController timeController = TextEditingController();
+  TextEditingController dateController = TextEditingController();
+
   bool isBottomshow = false;
   IconData fabicon = Icons.edit;
   int currentIndex = 0;
@@ -44,19 +51,75 @@ class _HomeLayoutState extends State<HomeLayout> {
       floatingActionButton: FloatingActionButton(
           onPressed: () {
             if (isBottomshow) {
-              Navigator.pop(context);
-              isBottomshow = false;
-              setState(() {
-                fabicon = Icons.edit;
-              });
+              if (validate.currentState!.validate()) {
+                Navigator.pop(context);
+                isBottomshow = false;
+                setState(() {
+                  fabicon = Icons.edit;
+                });
+              }
             } else {
-              scaffoldKey.currentState!.showBottomSheet(
-                (context) => Container(
-                  color: Colors.red,
-                  height: 120.0,
-                  width: double.infinity,
-                ),
-              );
+              scaffoldKey.currentState!.showBottomSheet((context) => Container(
+                    padding: EdgeInsets.all(20),
+                    child: Form(
+                      key: validate,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          defualtInput(
+                              controller: titleController,
+                              inputType: TextInputType.text,
+                              text: 'Title',
+                              iconPre: Icons.title,
+                            validate: (value)  {
+                              if (value!.isEmpty) {
+                                return 'title must not be empty';
+                              }
+
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: 15.0,),
+                          defualtInput(
+                            controller: timeController,
+                            inputType: TextInputType.datetime,
+                            text: 'Time',
+                            iconPre: Icons.watch_later_outlined,
+                            onTap: (){
+                              showTimePicker(context: context, initialTime: TimeOfDay.now()).then((value) {
+                                timeController.text = value!.format(context).toString();
+                              });
+                            },
+                            validate: (value)  {
+                              if (value!.isEmpty) {
+                                return 'Time must not be empty';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: 15.0,),
+
+                          defualtInput(
+                            controller: dateController,
+                            inputType: TextInputType.datetime,
+                            text: 'Date',
+                            iconPre: Icons.calendar_month,
+                            onTap: () {
+                              showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime(2040)).then((value) {
+                                dateController.text = DateFormat.yMMMd().format(value!);
+                               });
+                            },
+                            validate: (value)  {
+                              if (value!.isEmpty) {
+                                return 'Time must not be empty';
+                              }
+                              return null;
+                            },
+                          )
+                        ],
+                      ),
+                    ),
+                  ));
               isBottomshow = true;
               setState(() {
                 fabicon = Icons.add;
