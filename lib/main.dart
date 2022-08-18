@@ -1,8 +1,13 @@
+import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:todoapp/layout/HomeLayout.dart';
+import 'package:todoapp/shared/cubit/observer.dart';
 
-void main() {
-  runApp(const MyApp());
+void main()
+{
+  Bloc.observer = MyBlocObserver();
+
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
