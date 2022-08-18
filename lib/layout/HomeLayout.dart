@@ -12,7 +12,6 @@ import 'package:todoapp/shared/cubit/states.dart';
 
 import '../shared/components/constant.dart';
 
-
 class HomeLayout extends StatelessWidget {
   var scaffoldKey = GlobalKey<ScaffoldState>();
   var validate = GlobalKey<FormState>();
