@@ -1,3 +1,4 @@
+import 'package:conditional_builder_null_safety/conditional_builder_null_safety.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:sqflite/sqflite.dart';
@@ -5,6 +6,8 @@ import 'package:todoapp/modules/archive_tasks_screen.dart';
 import 'package:todoapp/modules/done_tasks_screen.dart';
 import 'package:todoapp/modules/new_tasks_screen.dart';
 import 'package:todoapp/shared/components/components.dart';
+
+import '../shared/components/constant.dart';
 
 class HomeLayout extends StatefulWidget {
   const HomeLayout({Key? key}) : super(key: key);
@@ -20,7 +23,6 @@ class _HomeLayoutState extends State<HomeLayout> {
   TextEditingController titleController = TextEditingController();
   TextEditingController timeController = TextEditingController();
   TextEditingController dateController = TextEditingController();
-
   bool isBottomshow = false;
   IconData fabicon = Icons.edit;
   int currentIndex = 0;
@@ -52,74 +54,103 @@ class _HomeLayoutState extends State<HomeLayout> {
           onPressed: () {
             if (isBottomshow) {
               if (validate.currentState!.validate()) {
-                Navigator.pop(context);
-                isBottomshow = false;
-                setState(() {
-                  fabicon = Icons.edit;
+                insertDatabase(
+                        title: titleController.text,
+                        time: timeController.text,
+                        date: dateController.text)
+                    .then((value) {
+                  Navigator.pop(context);
+                  isBottomshow = false;
+                  setState(() {
+                    fabicon = Icons.edit;
+                  });
                 });
               }
             } else {
-              scaffoldKey.currentState!.showBottomSheet((context) => Container(
-                    padding: EdgeInsets.all(20),
-                    child: Form(
-                      key: validate,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          defualtInput(
+              scaffoldKey.currentState!
+                  .showBottomSheet(
+                    (context) => Container(
+                      padding: EdgeInsets.all(20),
+                      child: Form(
+                        key: validate,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            defualtInput(
                               controller: titleController,
                               inputType: TextInputType.text,
                               text: 'Title',
                               iconPre: Icons.title,
-                            validate: (value)  {
-                              if (value!.isEmpty) {
-                                return 'title must not be empty';
-                              }
+                              validate: (value) {
+                                if (value!.isEmpty) {
+                                  return 'title must not be empty';
+                                }
 
-                              return null;
-                            },
-                          ),
-                          SizedBox(height: 15.0,),
-                          defualtInput(
-                            controller: timeController,
-                            inputType: TextInputType.datetime,
-                            text: 'Time',
-                            iconPre: Icons.watch_later_outlined,
-                            onTap: (){
-                              showTimePicker(context: context, initialTime: TimeOfDay.now()).then((value) {
-                                timeController.text = value!.format(context).toString();
-                              });
-                            },
-                            validate: (value)  {
-                              if (value!.isEmpty) {
-                                return 'Time must not be empty';
-                              }
-                              return null;
-                            },
-                          ),
-                          SizedBox(height: 15.0,),
-
-                          defualtInput(
-                            controller: dateController,
-                            inputType: TextInputType.datetime,
-                            text: 'Date',
-                            iconPre: Icons.calendar_month,
-                            onTap: () {
-                              showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime(2040)).then((value) {
-                                dateController.text = DateFormat.yMMMd().format(value!);
-                               });
-                            },
-                            validate: (value)  {
-                              if (value!.isEmpty) {
-                                return 'Time must not be empty';
-                              }
-                              return null;
-                            },
-                          )
-                        ],
+                                return null;
+                              },
+                            ),
+                            SizedBox(
+                              height: 15.0,
+                            ),
+                            defualtInput(
+                              controller: timeController,
+                              inputType: TextInputType.datetime,
+                              text: 'Time',
+                              iconPre: Icons.watch_later_outlined,
+                              onTap: () {
+                                showTimePicker(
+                                        context: context,
+                                        initialTime: TimeOfDay.now())
+                                    .then((value) {
+                                  timeController.text =
+                                      value!.format(context).toString();
+                                });
+                              },
+                              validate: (value) {
+                                if (value!.isEmpty) {
+                                  return 'Time must not be empty';
+                                }
+                                return null;
+                              },
+                            ),
+                            SizedBox(
+                              height: 15.0,
+                            ),
+                            defualtInput(
+                              controller: dateController,
+                              inputType: TextInputType.datetime,
+                              text: 'Date',
+                              iconPre: Icons.calendar_month,
+                              onTap: () {
+                                showDatePicker(
+                                        context: context,
+                                        initialDate: DateTime.now(),
+                                        firstDate: DateTime.now(),
+                                        lastDate: DateTime(2040))
+                                    .then((value) {
+                                  dateController.text =
+                                      DateFormat.yMMMd().format(value!);
+                                });
+                              },
+                              validate: (value) {
+                                if (value!.isEmpty) {
+                                  return 'Time must not be empty';
+                                }
+                                return null;
+                              },
+                            )
+                          ],
+                        ),
                       ),
                     ),
-                  ));
+                  )
+                  .closed
+                  .then((value) {
+                isBottomshow = false;
+                setState(() {
+                  fabicon = Icons.edit;
+                });
+              });
               isBottomshow = true;
               setState(() {
                 fabicon = Icons.add;
@@ -143,7 +174,11 @@ class _HomeLayoutState extends State<HomeLayout> {
               icon: Icon(Icons.archive_rounded), label: "Archived"),
         ],
       ),
-      body: screens[currentIndex],
+      body: ConditionalBuilder(
+        condition: tasks.length > 0,
+        builder: (context) => screens[currentIndex],
+        fallback: (context) => Center(child: CircularProgressIndicator()),
+      ),
     );
   }
 
@@ -162,17 +197,31 @@ class _HomeLayoutState extends State<HomeLayout> {
           .then((value) {
         print("tables created");
       });
-    }, onOpen: (database) {});
+    }, onOpen: (database) {
+      getDatabase(database).then((value) {
+        setState(() {
+          tasks = value;
+        });
+      });
+    });
   }
 
-  void insertDatabase() {
-    database.transaction((txn) => txn
+  Future insertDatabase({
+    required String title,
+    required String time,
+    required String date,
+  }) async {
+    await database.transaction((txn) => txn
             .rawInsert(
-                'INSERT INTO tasks(title, date, time, status) VALUES("asfa", "231", "234", "new")')
+                'INSERT INTO tasks(title, date, time, status) VALUES("$title", "$date", "$time", "new")')
             .then((value) {
           print('$value inserted successfully');
         }).catchError((error) {
           print('Error When Inserting New Record ${error.toString()}');
         }));
+  }
+
+  Future<List<Map>> getDatabase(database) {
+    return database.rawQuery('SELECT * FROM tasks');
   }
 }

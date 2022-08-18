@@ -54,3 +54,35 @@ Widget defualtInput({
         border: OutlineInputBorder(),
       ),
     );
+
+Widget taskItem(Map tasks) => Padding(
+  padding: const EdgeInsets.all(20.0),
+  child: Row(
+    children: [
+      CircleAvatar(
+        radius: 35.0,
+        child: Text(
+          '${tasks["time"]}',
+        ),
+      ),
+      SizedBox(
+        width: 20,
+      ),
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            '${tasks["title"]}',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          Text(
+            '${tasks["date"]}',
+            style: TextStyle(fontSize: 10, ),
+          ),
+        ],
+      ),
+    ],
+  ),
+);
