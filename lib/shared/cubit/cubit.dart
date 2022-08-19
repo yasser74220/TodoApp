@@ -13,7 +13,9 @@ class AppCubit extends Cubit<AppStates>{
   AppCubit() : super (AppInitialState());
   static AppCubit get(context) => BlocProvider.of(context);
     late Database database;
-  List<Map> tasks = [];
+  List<Map> newTasks = [];
+  List<Map> doneTasks = [];
+  List<Map> archivedTasks = [];
 
   int currentIndex = 0;
   List<Widget> screens = [
@@ -48,12 +50,9 @@ class AppCubit extends Cubit<AppStates>{
             print("tables created");
           });
         }, onOpen: (database) {
-          getDatabase(database).then((value) {
-              tasks = value;
-              print(tasks);
-              emit(AppGetDatabaseState());
-          });
-          print("database opened");
+         getDatabase(database);
+
+         print("database opened");
         }).then((value) {
           database = value;
           emit(AppCreateDatabaseState());
@@ -72,18 +71,33 @@ class AppCubit extends Cubit<AppStates>{
         .then((value) {
       print('$value inserted successfully');
       emit(AppInsertDatabaseState());
-      getDatabase(database).then((value) {
-        tasks = value;
-        print(tasks);
-        emit(AppGetDatabaseState());
-      });
+             getDatabase(database);
+
     }).catchError((error) {
       print('Error When Inserting New Record ${error.toString()}');
     }));
   }
+  void getDatabase(database)
+  {
+    newTasks = [];
+    doneTasks = [];
+    archivedTasks = [];
 
-  Future<List<Map>> getDatabase(database) {
-    return database.rawQuery('SELECT * FROM tasks');
+    emit(AppGetDatabaseLoadingState());
+
+    database.rawQuery('SELECT * FROM tasks').then((value) {
+
+      value.forEach((element)
+      {
+        if(element['status'] == 'new')
+          newTasks.add(element);
+        else if(element['status'] == 'done')
+          doneTasks.add(element);
+        else archivedTasks.add(element);
+      });
+
+      emit(AppGetDatabaseState());
+    });
   }
 
   bool isBottomshow = false;
@@ -97,5 +111,32 @@ class AppCubit extends Cubit<AppStates>{
     isBottomshow = isShow;
     fabicon = icon;
     emit(AppChangeBottomSheetState());
+  }
+
+  void updateData({
+    required String status,
+    required int id,
+  }) async
+  {
+    database.rawUpdate(
+      'UPDATE tasks SET status = ? WHERE id = ?',
+      ['$status', id],
+    ).then((value)
+    {
+      getDatabase(database);
+      emit(AppUpdateDatabaseState());
+    });
+  }
+
+  void deleteData({
+    required int id,
+  }) async
+  {
+    database.rawDelete('DELETE FROM tasks WHERE id = ?', [id])
+        .then((value)
+    {
+      getDatabase(database);
+      emit(AppDeleteDatabaseState());
+    });
   }
 }

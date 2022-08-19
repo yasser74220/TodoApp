@@ -17,16 +17,10 @@ class NewTasksScreen extends StatelessWidget {
       builder: (context, state) {
         var tasks = AppCubit
             .get(context)
-            .tasks;
-        return ListView.separated(
-            itemBuilder: (context, index) => taskItem(tasks[index]),
-            separatorBuilder: (context, index) =>
-                Container(
-                  width: double.infinity,
-                  height: 1,
-                  color: Colors.grey[300],
-                ),
-            itemCount: tasks.length);
+            .newTasks;
+        return tasksBuilder(
+          tasks: tasks,
+        );
       },
     );
   }
